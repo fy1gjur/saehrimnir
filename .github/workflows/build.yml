@@ -15,8 +15,8 @@ concurrency:
 env:
   IMAGE_NAME: ${{ github.event.repository.name }}
   IMAGE_TAG: latest
-  CONTAINER_IMAGE_URL: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-  ISO_IMAGE_STORAGE_URL: https://${{ secret.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+  CONTAINER_IMAGE_URL: ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}
+  ISO_IMAGE_STORAGE_URL: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
 
 jobs:
   build-container:
