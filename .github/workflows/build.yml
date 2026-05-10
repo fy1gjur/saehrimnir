@@ -1,0 +1,69 @@
+name: Build bootable container and ISO image
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+  IMAGE_NAME: "${{ github.event.repository.name }}"
+  IMAGE_TAG: "latest"
+
+jobs:
+  build-container:
+    name: Build and push bootable container image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v6
+
+      - name: Free some disk space
+        run: rm -rf /opt/hostedtoolcache
+
+      - name: Build image with Podman
+        run: podman build -t ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
+
+      - name: Push image to GitHub Container Registry
+        run: podman push --creds=${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+  build-iso:
+    name: Build ISO image
+    runs-on: ubuntu-latest
+    needs: build-container
+    permissions:
+      contents: read
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v6
+
+      - name: Free some disk space
+        run: rm -rf /opt/hostedtoolcache
+
+      - name: Build ISO with bootc-image-builder
+        uses: osbuild/bootc-image-builder-action@main
+        with:
+          image: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          config-file: ./iso.toml
+          types: |
+            anaconda-iso
+          additional-args: --use-librepo=True
+
+      - name: Upload ISO as job artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ github.event.repository.name }}-iso
+          path: ${{ steps.build.outputs.output-directory }}
+          if-no-files-found: error
+          retention-days: 0
+          compression-level: 0
+          overwrite: true
