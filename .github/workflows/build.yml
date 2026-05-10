@@ -41,9 +41,7 @@ jobs:
 
       - name: Pushing bootable container image to GitHub Container Registry
         id: push-container
-        run: buildah push \
-               --creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
-               "${{ env.CONTAINER_IMAGE_REGISTRY }}/${{ env.CONTAINER_IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.CONTAINER_IMAGE_TAG }}"
+        run: buildah push --creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" "${{ env.CONTAINER_IMAGE_REGISTRY }}/${{ env.CONTAINER_IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.CONTAINER_IMAGE_TAG }}"
 
   build-iso:
     name: Building and publishing ISO image
