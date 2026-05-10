@@ -1,5 +1,5 @@
 [customizations.iso]
-volume_id = "saehrimnir"
+volume_id = "SAEHRIMNIR"
 publisher = "fy1gjur"
 
 [customizations.installer.kickstart]
