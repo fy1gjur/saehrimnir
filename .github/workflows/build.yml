@@ -13,11 +13,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  IMAGE_REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ github.repository_owner }}
   IMAGE_NAME: ${{ github.event.repository.name }}
-  CONTAINER_IMAGE_REGISTRY: ghcr.io
-  CONTAINER_IMAGE_NAMESPACE: ${{ github.repository_owner }}
-  CONTAINER_IMAGE_TAG: latest
-  ISO_IMAGE_STORAGE_URL: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+  IMAGE_TAG: latest
 
 jobs:
   build-container:
@@ -39,7 +38,7 @@ jobs:
         id: build-container
         run: |
           buildah build \
-            -t "${{ env.CONTAINER_IMAGE_REGISTRY }}/${{ env.CONTAINER_IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.CONTAINER_IMAGE_TAG }}" \
+            -t "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" \
             .
 
       - name: Pushing bootable container image to GitHub Container Registry
@@ -47,7 +46,7 @@ jobs:
         run: |
           buildah push \
             --creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
-            "${{ env.CONTAINER_IMAGE_REGISTRY }}/${{ env.CONTAINER_IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.CONTAINER_IMAGE_TAG }}"
+            "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
 
   build-iso:
     name: Building and publishing ISO image
@@ -68,7 +67,7 @@ jobs:
         id: build-iso
         uses: osbuild/bootc-image-builder-action@main
         with:
-          image: "${{ env.CONTAINER_IMAGE_REGISTRY }}/${{ env.CONTAINER_IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.CONTAINER_IMAGE_TAG }}"
+          image: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
           config-file: ./config/iso.toml
           types: |
             anaconda-iso
@@ -87,7 +86,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDLFARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDLFARE_R2_SECRET_ACCESS_KEY }}
-          AWS_ENDPOINT_URL: ${{ env.ISO_IMAGE_STORAGE_URL }}
+          AWS_ENDPOINT_URL: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
         run: |
           aws s3 cp \
             ${{ steps.build-iso.outputs.output-directory }}/${{ env.IMAGE_NAME }}.iso \
