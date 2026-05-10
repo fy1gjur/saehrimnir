@@ -37,11 +37,9 @@ jobs:
 
       - name: Building bootable container image with Buildah
         id: build-container
-        run: buildah build \
-               -t "${{ env.CONTAINER_IMAGE_REGISTRY }}/${{ env.CONTAINER_IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.CONTAINER_IMAGE_TAG }}" \
-               .
+        run: buildah build -t "${{ env.CONTAINER_IMAGE_REGISTRY }}/${{ env.CONTAINER_IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.CONTAINER_IMAGE_TAG }}" .
 
-      - name: Pushing bottable container image to GitHub Container Registry
+      - name: Pushing bootable container image to GitHub Container Registry
         id: push-container
         run: buildah push \
                --creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
@@ -79,7 +77,7 @@ jobs:
           mv ${{ steps.build-iso.outputs.output-directory }}/**/*.iso \
              ${{ steps.build-iso.outputs.output-directory }}/${{ env.IMAGE_NAME }}.iso
 
-      - name: Uploading ISO to Cloudflare R2
+      - name: Uploading ISO image to Cloudflare R2
         id: upload-iso
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDLFARE_R2_ACCESS_KEY_ID }}
