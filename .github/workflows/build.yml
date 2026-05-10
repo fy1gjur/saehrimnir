@@ -56,6 +56,7 @@ jobs:
           config-file: ./iso.toml
           types: |
             anaconda-iso
+          rootfs: ext4
           additional-args: --use-librepo=True
 
       - name: Upload ISO as job artifact
