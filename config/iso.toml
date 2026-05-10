@@ -1,0 +1,6 @@
+[customizations.iso]
+volume_id = "saehrimnir"
+publisher = "fy1gjur"
+
+[customizations.installer.kickstart]
+contents = "graphical"

@@ -1,10 +1,11 @@
 name: Building bootable container and ISO image
+
 on:
   push:
     branches:
       - main
     paths-ignore:
-      - "**.md"
+      - "**/*.md"
   workflow_dispatch:
 
 concurrency:
@@ -12,9 +13,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
-  IMAGE_NAME: "${{ github.event.repository.name }}"
-  IMAGE_TAG: "latest"
+  IMAGE_NAME: ${{ github.event.repository.name }}
+  IMAGE_TAG: latest
+  CONTAINER_IMAGE_URL: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+  ISO_IMAGE_STORAGE_URL: https://${{ secret.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
 
 jobs:
   build-container:
@@ -34,18 +36,18 @@ jobs:
 
       - name: Building bootable container image with Buildah
         id: build-container
-        run: buildah build -t ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
+        run: buildah build -t "${{ env.CONTAINER_IMAGE_URL }}" .
 
       - name: Pushing bottable container image to GitHub Container Registry
         id: push-container
-        run: buildah push --creds=${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+        run: buildah push --creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" "${{ env.CONTAINER_IMAGE_URL }}"
 
   build-iso:
     name: Building and publishing ISO image
     runs-on: ubuntu-latest
     needs: build-container
     permissions:
-      contents: write
+      contents: read
     steps:
       - name: Checking out the repository
         id: checkout-repository
@@ -59,32 +61,26 @@ jobs:
         id: build-iso
         uses: osbuild/bootc-image-builder-action@main
         with:
-          image: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          config-file: ./iso.toml
+          image: ${{ env.CONTAINER_IMAGE_URL }}
+          config-file: ./config/iso.toml
           types: |
             anaconda-iso
           rootfs: ext4
           additional-args: --use-librepo=True
 
-      - name: Uploading ISO image as job artifact
-        id: upload-iso
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ github.event.repository.name }}.iso
-          path: ${{ steps.build-iso.outputs.output-directory }}
-          if-no-files-found: error
-          retention-days: 0
-          compression-level: 0
-          overwrite: true
-
-      - name: Creating GitHub Release with ISO image
-        id: create-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: build-${{ github.run_number }}
+      - name: Renaming ISO image
+        id: rename-iso
         run: |
-          gh release create "$TAG" \
-             --repo "${{ github.repository }}" \
-             --title "Build ${{ github.run_number }}" \
-             --generate-notes \
-             ${{ steps.build-iso.outputs.output-directory }}/**/*.iso
+          mv ${{ steps.build-iso.outputs.output-directory }}/**/*.iso \
+             ${{ steps.build-iso.outputs.output-directory }}/${{ env.IMAGE_NAME }}.iso
+
+      - name: Uploading ISO to Cloudflare R2
+        id: upload-iso
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDLFARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDLFARE_R2_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: ${{ env.ISO_IMAGE_STORAGE_URL }}
+        run: |
+          aws s3 cp \
+            ${{ steps.build-iso.outputs.output-directory }}/${{ env.IMAGE_NAME }}.iso \
+            s3://${{ env.IMAGE_NAME }}/${{ env.IMAGE_NAME }}.iso
