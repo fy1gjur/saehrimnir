@@ -41,7 +41,7 @@ jobs:
         run: buildah push --creds=${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
   build-iso:
-    name: Building ISO image
+    name: Building and publishing ISO image
     runs-on: ubuntu-latest
     needs: build-container
     permissions:
@@ -70,9 +70,21 @@ jobs:
         id: upload-iso
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ github.event.repository.name }}-iso
+          name: ${{ github.event.repository.name }}.iso
           path: ${{ steps.build-iso.outputs.output-directory }}
           if-no-files-found: error
           retention-days: 0
           compression-level: 0
           overwrite: true
+
+      - name: Creating GitHub Release with ISO image
+        id: create-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: build-${{ github.run_number }}
+        run: |
+          gh release create "$TAG" \
+             --repo "${{ github.repository }}" \
+             --title "Build ${{ github.run_number }}" \
+             --generate-notes \
+             ${{ steps.build-iso.outputs.output-directory }}/**/*.iso
