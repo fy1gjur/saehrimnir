@@ -14,8 +14,9 @@ concurrency:
 
 env:
   IMAGE_NAME: ${{ github.event.repository.name }}
-  IMAGE_TAG: latest
-  CONTAINER_IMAGE_URL: ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}
+  CONTAINER_IMAGE_REGISTRY: ghcr.io
+  CONTAINER_IMAGE_NAMESPACE: ${{ github.repository_owner }}
+  CONTAINER_IMAGE_TAG: latest
   ISO_IMAGE_STORAGE_URL: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
 
 jobs:
@@ -36,11 +37,15 @@ jobs:
 
       - name: Building bootable container image with Buildah
         id: build-container
-        run: buildah build -t "${{ env.CONTAINER_IMAGE_URL }}" .
+        run: buildah build \
+               -t "${{ env.CONTAINER_IMAGE_REGISTRY }}/${{ env.CONTAINER_IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.CONTAINER_IMAGE_TAG }}" \
+               .
 
       - name: Pushing bottable container image to GitHub Container Registry
         id: push-container
-        run: buildah push --creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" "${{ env.CONTAINER_IMAGE_URL }}"
+        run: buildah push \
+               --creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
+               "${{ env.CONTAINER_IMAGE_REGISTRY }}/${{ env.CONTAINER_IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.CONTAINER_IMAGE_TAG }}"
 
   build-iso:
     name: Building and publishing ISO image
@@ -61,7 +66,7 @@ jobs:
         id: build-iso
         uses: osbuild/bootc-image-builder-action@main
         with:
-          image: ${{ env.CONTAINER_IMAGE_URL }}
+          image: "${{ env.CONTAINER_IMAGE_REGISTRY }}/${{ env.CONTAINER_IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.CONTAINER_IMAGE_TAG }}"
           config-file: ./config/iso.toml
           types: |
             anaconda-iso
