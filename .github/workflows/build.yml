@@ -78,8 +78,9 @@ jobs:
       - name: Renaming ISO image
         id: rename-iso
         run: |
-          mv ${{ steps.build-iso.outputs.output-directory }}/**/*.iso \
-             ${{ steps.build-iso.outputs.output-directory }}/${{ env.IMAGE_NAME }}.iso
+          sudo mv \
+            ${{ steps.build-iso.outputs.output-directory }}/**/*.iso \
+            ${{ steps.build-iso.outputs.output-directory }}/${{ env.IMAGE_NAME }}.iso
 
       - name: Uploading ISO image to Cloudflare R2
         id: upload-iso
