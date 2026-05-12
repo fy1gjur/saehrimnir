@@ -17,7 +17,7 @@ env:
   CONTAINER_IMAGE_REGISTRY: ghcr.io
   CONTAINER_IMAGE_NAMESPACE: ${{ github.repository_owner }}
   CONTAINER_IMAGE_TAG: latest
-  ISO_IMAGE_STORAGE_URL: https://${{ secrets.CLOUDLFARE_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+  ISO_IMAGE_STORAGE_URL: https://${{ secrets.CLOUDFLARE_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
 
 jobs:
   build-container:
@@ -93,8 +93,8 @@ jobs:
       - name: Uploading ISO image to Cloudflare R2
         id: upload-iso
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDLFARE_R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDLFARE_R2_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: ${{ env.ISO_IMAGE_STORAGE_URL }}
         run: |
           aws s3 cp \
