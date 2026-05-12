@@ -49,6 +49,14 @@ jobs:
             --creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
             "${{ env.CONTAINER_IMAGE_REGISTRY }}/${{ env.CONTAINER_IMAGE_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.CONTAINER_IMAGE_TAG }}"
 
+      - name: Removing old container images from GitHub Container Registry
+        id: remove-old-containers
+        uses: actions/delete-package-version@v5
+        with:
+          package-name: ${{ env.IMAGE_NAME }}
+          package-type: container
+          min-versions-to-keep: 14
+
   build-iso:
     name: Building and publishing ISO image
     runs-on: ubuntu-latest
