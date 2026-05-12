@@ -99,4 +99,5 @@ jobs:
         run: |
           aws s3 cp \
             ${{ steps.build-iso.outputs.output-directory }}/${{ env.IMAGE_NAME }}.iso \
-            s3://${{ env.IMAGE_NAME }}/${{ env.IMAGE_NAME }}.iso
+            s3://${{ env.IMAGE_NAME }}/${{ env.IMAGE_NAME }}.iso \
+            --content-disposition 'attachment; filename="${{ env.IMAGE_NAME }}.iso"'
